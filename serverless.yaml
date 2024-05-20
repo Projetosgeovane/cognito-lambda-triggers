@@ -1,0 +1,48 @@
+service: cognito-lambda-triggers
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    COGNITO_USER_POOL_ID: us-east-1_7Dfi4LJQu
+    COGNITO_APP_CLIENT_ID: b5ngdmppe4u41p4i8r9q0d
+    COGNITO_REGION: us-east-1
+
+functions:
+  preSignUp:
+    handler: dist/src/pre-sign-up.handler
+    events:
+      - cognitoUserPool:
+          pool: ${self:provider.environment.COGNITO_USER_POOL_ID}
+          trigger: PreSignUp
+
+  customMessage:
+    handler: dist/src/handlers/custom-message/custom-message.handler
+    events:
+      - cognitoUserPool:
+          pool: ${self:provider.environment.COGNITO_USER_POOL_ID}
+          trigger: CustomMessage
+
+  defineAuthChallenge:
+    handler: dist/src/handlers/define-auth-challenge/define-auth-challenge.handler
+    events:
+      - cognitoUserPool:
+          pool: ${self:provider.environment.COGNITO_USER_POOL_ID}
+          trigger: DefineAuthChallenge
+
+  createAuthChallenge:
+    handler: dist/src/handlers/create-auth-challenge/create-auth-challenge.handler
+    events:
+      - cognitoUserPool:
+          pool: ${self:provider.environment.COGNITO_USER_POOL_ID}
+          trigger: CreateAuthChallenge
+
+  verifyAuthChallenge:
+    handler: dist/src/handlers/verify-auth-challenge/verify-auth-challenge.handler
+    events:
+      - cognitoUserPool:
+          pool: ${self:provider.environment.COGNITO_USER_POOL_ID}
+          trigger: CreateAuthChallenge
+plugins:
+  - serverless-offline

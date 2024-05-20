@@ -1,0 +1,582 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ServerlessDeploymentBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "ServerlessDeploymentBucket"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      },
+                      "/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": false
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "PreSignUpLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/cognito-lambda-triggers-dev-preSignUp"
+      }
+    },
+    "CustomMessageLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/cognito-lambda-triggers-dev-customMessage"
+      }
+    },
+    "DefineAuthChallengeLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/cognito-lambda-triggers-dev-defineAuthChallenge"
+      }
+    },
+    "CreateAuthChallengeLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/cognito-lambda-triggers-dev-createAuthChallenge"
+      }
+    },
+    "VerifyAuthChallengeLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/cognito-lambda-triggers-dev-verifyAuthChallenge"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "cognito-lambda-triggers",
+                  "dev",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup",
+                    "logs:TagResource"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/cognito-lambda-triggers-dev*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/cognito-lambda-triggers-dev*:*:*"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "cognito-lambda-triggers",
+              "dev",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "PreSignUpLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/cognito-lambda-triggers/dev/1716176216616-2024-05-20T03:36:56.616Z/cognito-lambda-triggers.zip"
+        },
+        "Handler": "dist/src/handlers/pre-sign-up/pre-sign-up.handler",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "cognito-lambda-triggers-dev-preSignUp",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "COGNITO_USER_POOL_ID": "us-east-1_7Dfi4LJQu",
+            "COGNITO_APP_CLIENT_ID": "b5ngdmppe4u41p4i8r9q0d",
+            "COGNITO_REGION": "us-east-1"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "PreSignUpLogGroup"
+      ]
+    },
+    "CustomMessageLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/cognito-lambda-triggers/dev/1716176216616-2024-05-20T03:36:56.616Z/cognito-lambda-triggers.zip"
+        },
+        "Handler": "dist/src/handlers/custom-message/custom-message.handler",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "cognito-lambda-triggers-dev-customMessage",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "COGNITO_USER_POOL_ID": "us-east-1_7Dfi4LJQu",
+            "COGNITO_APP_CLIENT_ID": "b5ngdmppe4u41p4i8r9q0d",
+            "COGNITO_REGION": "us-east-1"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "CustomMessageLogGroup"
+      ]
+    },
+    "DefineAuthChallengeLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/cognito-lambda-triggers/dev/1716176216616-2024-05-20T03:36:56.616Z/cognito-lambda-triggers.zip"
+        },
+        "Handler": "dist/src/handlers/define-auth-challenge/define-auth-challenge.handler",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "cognito-lambda-triggers-dev-defineAuthChallenge",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "COGNITO_USER_POOL_ID": "us-east-1_7Dfi4LJQu",
+            "COGNITO_APP_CLIENT_ID": "b5ngdmppe4u41p4i8r9q0d",
+            "COGNITO_REGION": "us-east-1"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "DefineAuthChallengeLogGroup"
+      ]
+    },
+    "CreateAuthChallengeLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/cognito-lambda-triggers/dev/1716176216616-2024-05-20T03:36:56.616Z/cognito-lambda-triggers.zip"
+        },
+        "Handler": "dist/src/handlers/create-auth-challenge/create-auth-challenge.handler",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "cognito-lambda-triggers-dev-createAuthChallenge",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "COGNITO_USER_POOL_ID": "us-east-1_7Dfi4LJQu",
+            "COGNITO_APP_CLIENT_ID": "b5ngdmppe4u41p4i8r9q0d",
+            "COGNITO_REGION": "us-east-1"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "CreateAuthChallengeLogGroup"
+      ]
+    },
+    "VerifyAuthChallengeLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/cognito-lambda-triggers/dev/1716176216616-2024-05-20T03:36:56.616Z/cognito-lambda-triggers.zip"
+        },
+        "Handler": "dist/src/handlers/verify-auth-challenge/verify-auth-challenge.handler",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "cognito-lambda-triggers-dev-verifyAuthChallenge",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "COGNITO_USER_POOL_ID": "us-east-1_7Dfi4LJQu",
+            "COGNITO_APP_CLIENT_ID": "b5ngdmppe4u41p4i8r9q0d",
+            "COGNITO_REGION": "us-east-1"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "VerifyAuthChallengeLogGroup"
+      ]
+    },
+    "PreSignUpLambdaVersionYa8XJMkxOgd5iMaaKX2ebkxJuZ8smDYlLB5ExtknWkU": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "PreSignUpLambdaFunction"
+        },
+        "CodeSha256": "jYbTSIc3PvfELF+VEK4aAlxnVVVRuYQAm8o++kGpE7k="
+      }
+    },
+    "CustomMessageLambdaVersionTO1BUyTeA9ZO2OAOtZy0mUBTK62cbMT6bcF4rxN6k": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "CustomMessageLambdaFunction"
+        },
+        "CodeSha256": "jYbTSIc3PvfELF+VEK4aAlxnVVVRuYQAm8o++kGpE7k="
+      }
+    },
+    "DefineAuthChallengeLambdaVersion1feXkJlFYVfPLGBccGrLoSv4nK6sGqrsVl2m0PPyk": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "DefineAuthChallengeLambdaFunction"
+        },
+        "CodeSha256": "jYbTSIc3PvfELF+VEK4aAlxnVVVRuYQAm8o++kGpE7k="
+      }
+    },
+    "CreateAuthChallengeLambdaVersion2FO28j7r9obKSEEmPAfAiNgN1tpUnRAF39Goos0Mj8": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "CreateAuthChallengeLambdaFunction"
+        },
+        "CodeSha256": "jYbTSIc3PvfELF+VEK4aAlxnVVVRuYQAm8o++kGpE7k="
+      }
+    },
+    "VerifyAuthChallengeLambdaVersionKIzrPBYUAwGNesBqryeLmUmOeuvpZD1OcIfwggPgU": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "VerifyAuthChallengeLambdaFunction"
+        },
+        "CodeSha256": "jYbTSIc3PvfELF+VEK4aAlxnVVVRuYQAm8o++kGpE7k="
+      }
+    },
+    "CognitoUserPoolUseast17Dfi4LJQu": {
+      "Type": "AWS::Cognito::UserPool",
+      "Properties": {
+        "UserPoolName": "us-east-1_7Dfi4LJQu",
+        "LambdaConfig": {
+          "PreSignUp": {
+            "Fn::GetAtt": [
+              "PreSignUpLambdaFunction",
+              "Arn"
+            ]
+          },
+          "CustomMessage": {
+            "Fn::GetAtt": [
+              "CustomMessageLambdaFunction",
+              "Arn"
+            ]
+          },
+          "DefineAuthChallenge": {
+            "Fn::GetAtt": [
+              "DefineAuthChallengeLambdaFunction",
+              "Arn"
+            ]
+          },
+          "CreateAuthChallenge": {
+            "Fn::GetAtt": [
+              "VerifyAuthChallengeLambdaFunction",
+              "Arn"
+            ]
+          }
+        }
+      },
+      "DependsOn": [
+        "PreSignUpLambdaFunction",
+        "CustomMessageLambdaFunction",
+        "DefineAuthChallengeLambdaFunction",
+        "CreateAuthChallengeLambdaFunction",
+        "VerifyAuthChallengeLambdaFunction"
+      ]
+    },
+    "PreSignUpLambdaPermissionCognitoUserPoolUseast17Dfi4LJQuTriggerSourcePreSignUp": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "PreSignUpLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "cognito-idp.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "CognitoUserPoolUseast17Dfi4LJQu",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "CustomMessageLambdaPermissionCognitoUserPoolUseast17Dfi4LJQuTriggerSourceCustomMessage": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CustomMessageLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "cognito-idp.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "CognitoUserPoolUseast17Dfi4LJQu",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "DefineAuthChallengeLambdaPermissionCognitoUserPoolUseast17Dfi4LJQuTriggerSourceDefineAuthChallenge": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "DefineAuthChallengeLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "cognito-idp.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "CognitoUserPoolUseast17Dfi4LJQu",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "CreateAuthChallengeLambdaPermissionCognitoUserPoolUseast17Dfi4LJQuTriggerSourceCreateAuthChallenge": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CreateAuthChallengeLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "cognito-idp.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "CognitoUserPoolUseast17Dfi4LJQu",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "VerifyAuthChallengeLambdaPermissionCognitoUserPoolUseast17Dfi4LJQuTriggerSourceCreateAuthChallenge": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "VerifyAuthChallengeLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "cognito-idp.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "CognitoUserPoolUseast17Dfi4LJQu",
+            "Arn"
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      },
+      "Export": {
+        "Name": "sls-cognito-lambda-triggers-dev-ServerlessDeploymentBucketName"
+      }
+    },
+    "PreSignUpLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "PreSignUpLambdaVersionYa8XJMkxOgd5iMaaKX2ebkxJuZ8smDYlLB5ExtknWkU"
+      },
+      "Export": {
+        "Name": "sls-cognito-lambda-triggers-dev-PreSignUpLambdaFunctionQualifiedArn"
+      }
+    },
+    "CustomMessageLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "CustomMessageLambdaVersionTO1BUyTeA9ZO2OAOtZy0mUBTK62cbMT6bcF4rxN6k"
+      },
+      "Export": {
+        "Name": "sls-cognito-lambda-triggers-dev-CustomMessageLambdaFunctionQualifiedArn"
+      }
+    },
+    "DefineAuthChallengeLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "DefineAuthChallengeLambdaVersion1feXkJlFYVfPLGBccGrLoSv4nK6sGqrsVl2m0PPyk"
+      },
+      "Export": {
+        "Name": "sls-cognito-lambda-triggers-dev-DefineAuthChallengeLambdaFunctionQualifiedArn"
+      }
+    },
+    "CreateAuthChallengeLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "CreateAuthChallengeLambdaVersion2FO28j7r9obKSEEmPAfAiNgN1tpUnRAF39Goos0Mj8"
+      },
+      "Export": {
+        "Name": "sls-cognito-lambda-triggers-dev-CreateAuthChallengeLambdaFunctionQualifiedArn"
+      }
+    },
+    "VerifyAuthChallengeLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "VerifyAuthChallengeLambdaVersionKIzrPBYUAwGNesBqryeLmUmOeuvpZD1OcIfwggPgU"
+      },
+      "Export": {
+        "Name": "sls-cognito-lambda-triggers-dev-VerifyAuthChallengeLambdaFunctionQualifiedArn"
+      }
+    }
+  }
+}
